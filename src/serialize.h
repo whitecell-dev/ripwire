@@ -2404,7 +2404,7 @@ inline void serialize( std::FILE* out, const IngestResult& ing, const std::vecto
     // written once the document it describes has been measured (PHASE 2 below) and the legend's own bytes
     // are part of what it describes.
     std::string legend = outProv
-        ? "<!-- ripwire v1 t=fn|method|cls|struct|iface|var|sec|macro(#define;degraded:body-is-replacement-text,edges-cross-expansion) p=path layer=arch-layer(opt) n=name sc=enclosing-scope(absent-if-unscoped;the-full-id-is-p::sc::n-with-p=-from-the-enclosing-f,and-expand/callers/impact/uses-accept-it) k=rank c=call amb=ambiguous-calls(read-source) lpin=calls-pinned-by-locality-prior-alone(a-disclosed-guess;read-source;absent-if-0) overloads=N-same-name-defs-merged-into-this-row(absent-if-1;shown=counts-them-individually,so-rows+sum(overloads-1)=shown) prov=per-EDGE-confidence(orthogonal-to-k):scip(index-pinned;precise)|binding(cross-lang-FFI)|import(ES-named-import;module+export-named)|split(one-arm-of-a-k-way-pick;read-source;these-are-the-edges-amb=-counts)|final-segment(last-name-match;namespace-unchecked)(absent=uniquely-resolved-name-based) hdr:unresolved=call-name-defined-only-in-a-lang-incompatible-file (edges heuristic) hdr:locality_pinned=sum-of-lpin(absent-if-0) hdr:external=calls-refused-as-bound-outside-the-tree(builtin/stdlib-name-without-in-repo-evidence,external-import,super-past-the-tree;no-edge;absent-if-0) r:est_tokens=hdr-copy(none-if-stable) -->"
+        ? "<!-- ripwire v1 t=fn|method|cls|struct|iface|var|sec|macro(#define;degraded:body-is-replacement-text,edges-cross-expansion) p=path layer=arch-layer(opt) n=name sc=enclosing-scope(absent-if-unscoped;the-full-id-is-p::sc::n-with-p=-from-the-enclosing-f,and-expand/callers/impact/uses-accept-it) k=rank c=call amb=ambiguous-calls(read-source) lpin=calls-pinned-by-locality-prior-alone(a-disclosed-guess;read-source;absent-if-0) overloads=N-same-name-defs-merged-into-this-row(absent-if-1;shown=counts-them-individually,so-rows+sum(overloads-1)=shown) prov=per-EDGE-confidence(orthogonal-to-k):scip(index-pinned;precise)|binding(cross-lang-FFI)|import(ES-named-import;module+export-named)|split(one-arm-of-a-k-way-pick;read-source;these-are-the-edges-amb=-counts;each-split-arm-names-its-candidate-to=P::SC::N-p=FILE-l=LINE)|final-segment(last-name-match;namespace-unchecked)(absent=uniquely-resolved-name-based) hdr:unresolved=call-name-defined-only-in-a-lang-incompatible-file (edges heuristic) hdr:locality_pinned=sum-of-lpin(absent-if-0) hdr:external=calls-refused-as-bound-outside-the-tree(builtin/stdlib-name-without-in-repo-evidence,external-import,super-past-the-tree;no-edge;absent-if-0) r:est_tokens=hdr-copy(none-if-stable) -->"
         : "<!-- ripwire v1 t=fn|method|cls|struct|iface|var|sec|macro(#define;degraded:body-is-replacement-text,edges-cross-expansion) p=path layer=arch-layer(opt) n=name sc=enclosing-scope(absent-if-unscoped;the-full-id-is-p::sc::n-with-p=-from-the-enclosing-f,and-expand/callers/impact/uses-accept-it) k=rank c=call amb=ambiguous-calls(read-source) lpin=calls-pinned-by-locality-prior-alone(a-disclosed-guess;read-source;absent-if-0) overloads=N-same-name-defs-merged-into-this-row(absent-if-1;shown=counts-them-individually,so-rows+sum(overloads-1)=shown) hdr:unresolved=call-name-defined-only-in-a-lang-incompatible-file (edges heuristic) hdr:locality_pinned=sum-of-lpin(absent-if-0) hdr:external=calls-refused-as-bound-outside-the-tree(builtin/stdlib-name-without-in-repo-evidence,external-import,super-past-the-tree;no-edge;absent-if-0) r:est_tokens=hdr-copy(none-if-stable) -->";
     // EXTENT HONESTY (src/extentsuspect.h): how many definitions carry extent_suspect= corpus-wide — the header's
     // extent_suspect_syms= — and the row + header readings, appended ONLY when that is non-zero, so a corpus with
@@ -2982,6 +2982,19 @@ inline void serialize( std::FILE* out, const IngestResult& ing, const std::vecto
                     {
                         w.write( "\" prov=\"" );
                         w.write( provLabel( ( *outProv )[e] ) );
+                        // F2: a split arm names its candidate — the target's own identity, so a consumer can
+                        // dereference the edge without joining IngestResult.references. to= is the emitted
+                        // canonical id (path::scope::name, the --expand selector spelling); p=/l= the target's
+                        // file (the enclosing <f p=> spelling) and line (the FILE:LINE:NAME selector half).
+                        // Split-only (prov value 3, graph.h): every other edge is already unambiguous.
+                        if( ( *outProv )[e] == 3u )
+                        {
+                            const Symbol& tgt = ing.symbols[ outTargets[e] ];
+                            w.write( "\" to=\"" );  w.write( escapeXml( canonicalIdForEmit( ing, tgt, rootArg ), esc ) );
+                            w.write( "\" p=\"" );   w.write( escapeXml( pathRel( tgt.fileId ), esc ) );
+                            char lb[ 24 ];  rw::formatTo( lb, sizeof( lb ), "\" l=\"{}", tgt.line );
+                            w.write( lb );
+                        }
                     }
                     w.write( "\"/>" );
                 }
@@ -7603,6 +7616,15 @@ inline void serializeJson( std::FILE* out, const IngestResult& ing, const std::v
                     if( outProv && e < outProv->size() && (*outProv)[e] )
                     {
                         w.write( ",\"prov\":" );  writeJsonStr( w, provLabel( (*outProv)[e] ), esc );
+                        // F2: the JSON twin of the XML split-arm identity above — the same three facts, the same
+                        // split-only presence rule, the same key order as the XML attribute order.
+                        if( (*outProv)[e] == 3u )
+                        {
+                            const Symbol& tgt = ing.symbols[ outTargets[e] ];
+                            w.write( ",\"to\":" );  writeJsonStr( w, canonicalIdForEmit( ing, tgt, rootArg ), esc );
+                            w.write( ",\"p\":" );   writeJsonStr( w, pathRel( tgt.fileId ), esc );
+                            rw::formatTo( num, sizeof( num ), ",\"l\":{}", tgt.line );  w.write( num );
+                        }
                     }
                     w.write( "}" );
                 }
