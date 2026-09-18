@@ -59,10 +59,13 @@ reviewing whether the codebase is trending toward or away from clean layering.
    outcome-based study has validated them. Trust the god-file/cycle read hardest; treat
    nccd/D as descriptive, not proof.**
    **Action**: a file in the top-3 by `afferent` is doing double duty as a de-facto layer
-   boundary with no rule enforcing it — that's the concrete next step, not just a note: add it
-   as a named `layer` in `rules.txt` and write the `deny` rules that keep new dependents out of
-   its internals. A cycle in `--report` is worse than a high-afferent file — break it before
-   formalizing anything downstream of it.
+    boundary with no rule enforcing it — that's the concrete next step, not just a note: add it
+    as a named `layer` in `rules.txt` and write the `deny` rules that keep new dependents out of
+    its internals. A cycle in `--report` is worse than a high-afferent file — break it before
+    formalizing anything downstream of it.
+    Per-file `<inc>` rows show the first 40 imports by default — when a godfile's list is cut
+    (its `<f>` carries `capped="1"`), `--deps-limit=N` raises the per-file cap and
+    `--deps-offset=M` pages it, so every import is retrievable.
 
 3. **Module clustering** — `ripwire <dir> --communities --legend=compact`
    Output: `<communities modules="N">` clusters with dominant directory and lead symbols.

@@ -179,6 +179,10 @@ struct Config
     // page M+N is the exact continuation of page M — no dropped/duplicated item across the seam.
     int              pageLimit         = 0;                // --limit=N: max items in this response (0 = unbounded)
     int              pageOffset        = 0;                // --offset=M: skip the first M items (0 = from the start)
+    int              depsLimit         = 0;                // --deps-limit=N: max <inc> rows per --deps file (0 = the 40-row display default)
+    int              depsOffset        = 0;                // --deps-offset=M: skip the first M <inc> rows of every --deps file (0 = from the start)
+    bool             depsLimitSet      = false;            // --deps-limit= passed explicitly (refused without --deps, like --slice-depth)
+    bool             depsOffsetSet     = false;            // --deps-offset= passed explicitly (same guard)
     bool             metrics           = false;            // --metrics: annotate symbols with fan-in/out + role (descriptive)
     bool             deps              = false;            // --deps: file→file dependency view (#include/import counts)
     bool             hotspots          = false;            // --hotspots: complexity × recent git churn (maintenance-pain map)
@@ -1337,7 +1341,14 @@ inline constexpr char kHelpHead[] =
         "                               autoload or rescue class -- is a use, not a load-time dependency: it is in --impact's importer tier\n"
         "                               (lazy=1) and in the row's inc t= list, NOT in afferent/instab/transitive/godfiles/\n"
         "                               stabledeps/cycles/ccd/acd/nccd/shape. <health lazy_edges=> counts the pairs left out,\n"
-        "                               a row's lazy_edges= its own; both absent when 0\n"
+        "                               a row's lazy_edges= its own; both absent when 0. per-file <inc> rows show\n"
+        "                               the first 40 by default; --deps-limit=N raises that per-file cap and\n"
+        "                               --deps-offset=M skips rows in every file, and a file that was cut carries\n"
+        "                               shown=/capped=/total=/has_more=/next_offset=/offset=/limit= on its own <f>\n"
+        "                               (includes= is the total), so every import is retrievable: re-issue with a\n"
+        "                               later offset until has_more=\"0\".\n"
+        "    --deps-limit=N             raise --deps' per-file <inc> row cap (default 40) [with --deps]\n"
+        "    --deps-offset=M            skip the first M <inc> rows of every --deps file [with --deps]\n"
         "    --hotspots                 rank files by complexity times recent git churn — where maintenance hurts\n"
         "                               complexity x recent git churn (maintenance pain); each row's top= is the worst function's\n"
         "                               BARE name, top_ccx= its cognitive complexity, top_l= its source line (build an --expand\n"
@@ -3253,6 +3264,15 @@ inline constexpr IntFlag kIntFlags[] =
     // --slice-depth=N (lane/or-arise rung 2): the --slice-flow BFS depth bound. The 1..32 band is a parse-time
     // domain (`most`), not a cross-flag contract; needing --slice-flow at all IS cross-flag (validateConfig).
     { "--slice-depth=",      &Config::sliceDepth,    false, 32,                "an integer in 1..32",        "--slice-depth=4" },
+    // --deps-limit=N / --deps-offset=M: the INNER <inc> row window of --deps (per file). The outer per-file
+    // list keeps the shared --limit/--offset — one window cannot page two independent listings, so the inner
+    // one gets its own pair (serialize.h::packDeps windows it with the same pageview.h primitives as the
+    // outer). 0 = unset (the 40-row display default / from the start); isSetFlag records explicitness so the
+    // pair is refused without --deps (validateModifierGuards).
+    { "--deps-limit=",       &Config::depsLimit,     false, kIntFlagMax,       "a positive integer",         "--deps-limit=100",
+      nullptr, nullptr, &Config::depsLimitSet },
+    { "--deps-offset=",      &Config::depsOffset,    true,  kIntFlagMax,       "a non-negative integer",     "--deps-offset=40",
+      nullptr, nullptr, &Config::depsOffsetSet },
 
     // the grep context windows (ripgrep -B/-A/-C)
     { "--grep-before=",      &Config::grepBefore,    true,  kIntFlagMax,       "a non-negative integer",     "--grep-before=3" },
@@ -3298,7 +3318,7 @@ inline constexpr IntFlag kIntFlags[] =
 //                              warn once per RUN, not per flag — state a BoolFlag row has nowhere to keep)
 //   • a bare no-op / bare pair --route, --quality-ack (the =REASON form is a kViewFlags row)
 inline constexpr std::size_t kHandWrittenFlagArms = 22;   // +1: --color-by= (enum-value arm); +3 G3 (2026-08-15 harvest): --and=/--not=/--grep-scope= (repeatable-value arms, same shape as --exclude=); +1 R-H: --grep-in= (closed-value arm, same shape as --grep-scope=)
-inline constexpr std::size_t kTotalFlagArms = 211;  // +1 --lsp (kBoolFlags row, 2026-09-15): the navigation LSP server stdio entry point — Phase 1 PoC, docs/LSP.md; +1 lane/recent-scope (2026-09-12, C1-b): --in= (kViewFlags row) — the directory-scoped <recent scope=> block of --rank-by=churn-decay; +2 P4 (capture-audit 2026-09-04, lane L7): --zoom-levels= (kIntFlags row, the printed-levels ceiling) and --include-builtins (kBoolFlags row, the external-surface builtin opt-in); +1 P9 (capture-audit 2026-09-04, lane L8): --no-post-check (kBoolFlags row, the edit receipt's folded verification opt-out); +1 lane/ca-L2 (2026-09-04, H11): --allow-dirty (kBoolFlags row) — the explicit consent --quality-baseline needs before it pins a floor on a tree that differs from HEAD; +1 lane/n6-c (2026-09-03): --no-ignore (kBoolFlags row, the .gitignore-by-default escape hatch); +1 lane/af-scope (2026-08-29): --scope= (kViewFlags row, the quality-delta ownership partition); +1 --quality-delta= (kViewFlags, R-I ref-pair form); +1 --help-task= (kViewFlags); +2 VT-1: --run-trace= (kViewFlags) and --run-timeout= (kIntFlags); +1: --handoff (kBoolFlags row); +1 --readability (kBoolFlags row); +2 §CLIO: --cochange-groups (kBoolFlags), --cochange-recur= (kIntFlags); +1 --context-ratio (kBoolFlags row); +1 --nonlocal-state (kBoolFlags row); +2 --field-affinity (kBoolFlags) and --field-affinity= (kViewFlags); +1 --comment-coherence (kBoolFlags row); +2 --dmm (kBoolFlags) and --dmm= (kViewFlags); +2 --quality-panel (kBoolFlags) and --quality-panel= (kViewFlags); +1 --naming-consistency (kBoolFlags row); +1 --naming-locals (kBoolFlags row, local-variable-indexing plan Phase 2); +1 --skipped (kBoolFlags row, §P0.5d itemization); +1 --with-profile= (kViewFlags row, the --lint × #PROF_TSV heat join); +1 --color-by= (hand-written enum-value arm); +1 --sarif (kBoolFlags row, W1-SARIF: SARIF 2.1.0 export for --lint); +1 --signatures-only (kBoolFlags row, T3 terminal-by-default --for opt-out); +3 L7: --lint-catalog (kBoolFlags), --lint-select= and --lint-ignore= (kViewFlags); +3 G3 (2026-08-15 harvest): --and=/--not=/--grep-scope= (hand-written arms); +1 R-H: --grep-in= (hand-written arm); +1 R2: --pattern= (kViewFlags row, the code-shaped structural search); +1 lane/safe-delete (2026-08-21): --safe-delete= (kViewFlags row, the composed "can I delete this?" read); +1 lane/compact-conceptual (2026-08-22): --auto-bodies (kBoolFlags row, the compact-conceptual-serving opt-out); +5 CLI edit bridge (2026-08-27): --replace-symbol-body=/--insert-before-symbol=/--insert-after-symbol=/--edit-payload=/--edit-target-file= (kViewFlags rows); +1 --handles (kBoolFlags row, grep edit handles); +1 --legend= (kViewFlags row, compact schema dialect); +3 edit-plan: --edit-plan= (kViewFlags) and --dry-run/--apply (kBoolFlags rows); +1 --agent= (kViewFlags row, the --doctor Codex surface); +1 lane/paper-slice (2026-08-28): --slice= (kViewFlags row, the ARISE-motivated def-use slice); +1 lane/af-planlint (2026-08-29): --plan-lint= (kViewFlags row, the PLAN-format structure gate, P3.2); +2 lane/or-arise (2026-08-30): --slice-flow= (kViewFlags row) and --slice-depth= (kIntFlags row) — the ARISE rung-2 cross-statement data-flow slice; +1 lane/at-seed (2026-08-30): --at= (kViewFlags row) — the FILE:LINE enclosing-chain report, with the @FILE:LINE selector spelling resolved in graph.h (no flag arm of its own); +1 CARD-1 phase 2 (2026-08-31): --pin-census= (kViewFlags row) — the eval-only S6-C silent-pin census, written beside the map and never into it
+inline constexpr std::size_t kTotalFlagArms = 213;  // +1 --lsp (kBoolFlags row, 2026-09-15): the navigation LSP server stdio entry point — Phase 1 PoC, docs/LSP.md; +2 F1 (lossless --deps inner rows): --deps-limit=/--deps-offset= (kIntFlags rows, the per-file <inc> window); +1 lane/recent-scope (2026-09-12, C1-b): --in= (kViewFlags row) — the directory-scoped <recent scope=> block of --rank-by=churn-decay; +2 P4 (capture-audit 2026-09-04, lane L7): --zoom-levels= (kIntFlags row, the printed-levels ceiling) and --include-builtins (kBoolFlags row, the external-surface builtin opt-in); +1 P9 (capture-audit 2026-09-04, lane L8): --no-post-check (kBoolFlags row, the edit receipt's folded verification opt-out); +1 lane/ca-L2 (2026-09-04, H11): --allow-dirty (kBoolFlags row) — the explicit consent --quality-baseline needs before it pins a floor on a tree that differs from HEAD; +1 lane/n6-c (2026-09-03): --no-ignore (kBoolFlags row, the .gitignore-by-default escape hatch); +1 lane/af-scope (2026-08-29): --scope= (kViewFlags row, the quality-delta ownership partition); +1 --quality-delta= (kViewFlags, R-I ref-pair form); +1 --help-task= (kViewFlags); +2 VT-1: --run-trace= (kViewFlags) and --run-timeout= (kIntFlags); +1: --handoff (kBoolFlags row); +1 --readability (kBoolFlags row); +2 §CLIO: --cochange-groups (kBoolFlags), --cochange-recur= (kIntFlags); +1 --context-ratio (kBoolFlags row); +1 --nonlocal-state (kBoolFlags row); +2 --field-affinity (kBoolFlags) and --field-affinity= (kViewFlags); +1 --comment-coherence (kBoolFlags row); +2 --dmm (kBoolFlags) and --dmm= (kViewFlags); +2 --quality-panel (kBoolFlags) and --quality-panel= (kViewFlags); +1 --naming-consistency (kBoolFlags row); +1 --naming-locals (kBoolFlags row, local-variable-indexing plan Phase 2); +1 --skipped (kBoolFlags row, §P0.5d itemization); +1 --with-profile= (kViewFlags row, the --lint × #PROF_TSV heat join); +1 --color-by= (hand-written enum-value arm); +1 --sarif (kBoolFlags row, W1-SARIF: SARIF 2.1.0 export for --lint); +1 --signatures-only (kBoolFlags row, T3 terminal-by-default --for opt-out); +3 L7: --lint-catalog (kBoolFlags), --lint-select= and --lint-ignore= (kViewFlags); +3 G3 (2026-08-15 harvest): --and=/--not=/--grep-scope= (hand-written arms); +1 R-H: --grep-in= (hand-written arm); +1 R2: --pattern= (kViewFlags row, the code-shaped structural search); +1 lane/safe-delete (2026-08-21): --safe-delete= (kViewFlags row, the composed "can I delete this?" read); +1 lane/compact-conceptual (2026-08-22): --auto-bodies (kBoolFlags row, the compact-conceptual-serving opt-out); +5 CLI edit bridge (2026-08-27): --replace-symbol-body=/--insert-before-symbol=/--insert-after-symbol=/--edit-payload=/--edit-target-file= (kViewFlags rows); +1 --handles (kBoolFlags row, grep edit handles); +1 --legend= (kViewFlags row, compact schema dialect); +3 edit-plan: --edit-plan= (kViewFlags) and --dry-run/--apply (kBoolFlags rows); +1 --agent= (kViewFlags row, the --doctor Codex surface); +1 lane/paper-slice (2026-08-28): --slice= (kViewFlags row, the ARISE-motivated def-use slice); +1 lane/af-planlint (2026-08-29): --plan-lint= (kViewFlags row, the PLAN-format structure gate, P3.2); +2 lane/or-arise (2026-08-30): --slice-flow= (kViewFlags row) and --slice-depth= (kIntFlags row) — the ARISE rung-2 cross-statement data-flow slice; +1 lane/at-seed (2026-08-30): --at= (kViewFlags row) — the FILE:LINE enclosing-chain report, with the @FILE:LINE selector spelling resolved in graph.h (no flag arm of its own); +1 CARD-1 phase 2 (2026-08-31): --pin-census= (kViewFlags row) — the eval-only S6-C silent-pin census, written beside the map and never into it
 static_assert( std::size( kBoolFlags ) + std::size( kViewFlags ) + std::size( kIntFlags ) + kHandWrittenFlagArms == kTotalFlagArms,
                "a --flag arm was added or removed without updating the ledger above — count the arms in parseArgs and fix the counter" );
 
@@ -4231,6 +4251,16 @@ inline void validateModifierGuards( Config& c ) noexcept
     if( c.runTimeoutSec > 0 && c.runTrace.empty() )
     {
         rw::emitRaw( stderr, "ripwire: --run-timeout=SECONDS modifies --run-trace — pass it too (e.g. ripwire <dir> --run-trace=\"make -j\" --run-timeout=60)\n" );
+        c.ok = false;
+    }
+
+    // --deps-limit= / --deps-offset= window the <inc> rows inside each --deps file and reach nothing
+    // anywhere else; alone they would silently no-op exactly like the modifiers around them. Refuse loudly,
+    // naming both flags (mirrors --run-timeout above; explicitness comes from the kIntFlags isSetFlag pair,
+    // so even --deps-offset=0 beside no --deps is a mistake, not a default).
+    if( ( c.depsLimitSet || c.depsOffsetSet ) && !c.deps )
+    {
+        rw::emitRaw( stderr, "ripwire: --deps-limit=N / --deps-offset=M window the <inc> rows inside each --deps file — pass --deps too (e.g. ripwire <dir> --deps --deps-limit=100)\n" );
         c.ok = false;
     }
 

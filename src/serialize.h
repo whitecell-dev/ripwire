@@ -6655,13 +6655,19 @@ inline void packDeps( std::FILE* out, const IngestResult& ing, int topN,
                       // lazy_edges=, written only when > 0) and in total (<health lazy_edges=>, same rule). See
                       // graph.h::resolveStructuralIncludeAdj for the cut and test/rubyrecvcheck.sh §5 for the rule.
                       const std::vector<std::uint32_t>& lazyEdgesByFile, std::uint64_t lazyEdges,
-                      // T2: pagination of the per-file dependency LIST (the high-cardinality tail). limit<=0 =
-                      // unbounded (the historic topN cap still applies); >0 overrides topN. offset skips the first
-                      // M files of the sorted order. The health/godfiles/stabledeps/cycles PREAMBLE is unpaginated
-                      // (it's a small fixed summary). Default args keep every existing caller byte-identical.
-                      int pageLimit = 0, int pageOffset = 0,
-                      std::string_view rootArg = {} )   // R-E (2026-08-17): same single-root-only root
-                                                        // argument serialize() takes — see its comment.
+                       // T2: pagination of the per-file dependency LIST (the high-cardinality tail). limit<=0 =
+                       // unbounded (the historic topN cap still applies); >0 overrides topN. offset skips the first
+                       // M files of the sorted order. The health/godfiles/stabledeps/cycles PREAMBLE is unpaginated
+                       // (it's a small fixed summary). Default args keep every existing caller byte-identical.
+                       int pageLimit = 0, int pageOffset = 0,
+                       std::string_view rootArg = {},   // R-E (2026-08-17): same single-root-only root
+                                                         // argument serialize() takes — see its comment.
+                       // F1: the INNER <inc> row window (per file). The outer --limit/--offset pages FILES; one
+                       // window cannot page two independent listings, so the <inc> rows get their own pair,
+                       // defaulting to the historic 40-row display cap. Windowed with the same pageview.h
+                       // primitives as the outer list (effectiveRowCap/pageWindow/pageDisclosure). Defaults keep
+                       // every existing caller byte-identical.
+                       int depsLimit = 0, int depsOffset = 0 )
 {
     const std::size_t F = ing.files.size();
     const std::string rootPrefix = rootArg.empty() ? std::string() : rw::sarif::rootPrefixOf( rootArg );
@@ -6714,11 +6720,14 @@ inline void packDeps( std::FILE* out, const IngestResult& ing, int topN,
              "version 81. a per-file target row (inc t=) with no edge behind it is a directive that did not resolve to an indexed file "
              "(external package, or a specifier this tool declines to guess at, e.g. a shell path built from a variable) "
              "— it is shown, never silently dropped. a LAZY edge — a pair every one of whose directives is written inside a "
-             "closure (a Ruby method/lambda/block, a TS/JS function body) or is a Ruby autoload or rescue class — is a USE, not a load-time "
-             "dependency: it is in the impact verb's importer tier (lazy=1) and in this row's inc t= list, and it is NOT in "
-             "afferent=/instab=/transitive=/godfiles/stabledeps/cycles/ccd/acd/nccd/shape=; health lazy_edges= counts the "
-             "pairs left out and a row's lazy_edges= its own — both absent when 0. "
-             "raise the default cap with limit=N (offset=M pages; a cut listing carries total=/has_more=/next_offset= so a paging loop can continue from it). -->" );
+              "closure (a Ruby method/lambda/block, a TS/JS function body) or is a Ruby autoload or rescue class — is a USE, not a load-time "
+              "dependency: it is in the impact verb's importer tier (lazy=1) and in this row's inc t= list, and it is NOT in "
+              "afferent=/instab=/transitive=/godfiles/stabledeps/cycles/ccd/acd/nccd/shape=; health lazy_edges= counts the "
+              "pairs left out and a row's lazy_edges= its own — both absent when 0. "
+              "per-file <inc> rows show the first 40 by default (deps-limit=N raises the per-file cap, deps-offset=M skips rows in every file); "
+              "a file that was cut carries shown=/capped=/total=/has_more=/next_offset=/offset=/limit= on its own <f> (includes= is the total), "
+              "so every import is retrievable — re-issue with a later offset until has_more=\"0\". "
+              "raise the default cap with limit=N (offset=M pages; a cut listing carries total=/has_more=/next_offset= so a paging loop can continue from it). -->" );
 
     // discloseCap=TRUE, and this is the one un-paginated byte-shape change here: --deps caps the listing at
     // --pack-top-n (default 40) while files= counted every file with an include — 40 rows under files="179"
@@ -6911,19 +6920,33 @@ inline void packDeps( std::FILE* out, const IngestResult& ing, int topN,
         char hdr[ 144 ];
         if( lazyHere > 0 )   // the resolved pairs this row's directives make that the structure leaves out (parser version 83)
         {
-            rw::formatTo( hdr, sizeof( hdr ), "\" includes=\"{}\" lazy_edges=\"{}\" afferent=\"{}\" instab=\"{:.2f}\" transitive=\"{}\">",
+            rw::formatTo( hdr, sizeof( hdr ), "\" includes=\"{}\" lazy_edges=\"{}\" afferent=\"{}\" instab=\"{:.2f}\" transitive=\"{}\"",
                            byFile[f].size(), lazyHere, f < afferent.size() ? afferent[f] : 0u, inst, trans( f ) );
         }
         else
         {
-            rw::formatTo( hdr, sizeof( hdr ), "\" includes=\"{}\" afferent=\"{}\" instab=\"{:.2f}\" transitive=\"{}\">",
+            rw::formatTo( hdr, sizeof( hdr ), "\" includes=\"{}\" afferent=\"{}\" instab=\"{:.2f}\" transitive=\"{}\"",
                            byFile[f].size(), f < afferent.size() ? afferent[f] : 0u, inst, trans( f ) );
         }
         w.write( "<f p=\"" );  w.write( escapeXml( pathRel( f ), esc ) );  w.write( hdr );
-        const std::size_t cap = byFile[f].size() < 40 ? byFile[f].size() : 40;
-        for( std::size_t j = 0; j < cap; ++j )
+        // F1: the inner <inc> rows are windowed EXACTLY like the outer per-file list — pageview.h pageWindow
+        // over the file's own rows, effectiveRowCap over the historic 40. Default (0,0) keeps the pre-F1 shape
+        // (first 40 rows plus <!-- +more -->) byte for byte. --deps-limit=N raises the per-file cap,
+        // --deps-offset=M skips rows in EVERY file (the --flags per-gate convention); a cut file discloses the
+        // standard paging block on its own <f> via pageDisclosure, so a loop over one file terminates.
+        // includes= on the same element is that block's total under the report's own name (pageview.h rule 2).
+        const int            incCap   = rw::effectiveRowCap( depsLimit, 40 );
+        const rw::PageWindow incPage  = rw::pageWindow( byFile[f].size(), incCap, depsOffset );
+        const std::size_t    incShown = incPage.end - incPage.begin;
+        if( incShown < byFile[f].size() || depsLimit > 0 || depsOffset > 0 )
+        {
+            char ib[ rw::kPageDisclosureCap ];
+            w.write( rw::pageDisclosure( ib, sizeof( ib ), incShown, byFile[f].size(), incPage.end, depsLimit, depsOffset, /*discloseCap=*/true ) );
+        }
+        w.write( ">" );
+        for( std::size_t j = incPage.begin; j < incPage.end; ++j )
         { w.write( "<inc t=\"" );  w.write( escapeXml( ing.includes[ byFile[f][j] ].target, esc ) );  w.write( "\"/>" ); }
-        if( byFile[f].size() > cap )
+        if( byFile[f].size() > incShown )
         {
             w.write( "<!-- +more -->" );
         }

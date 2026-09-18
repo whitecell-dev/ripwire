@@ -416,6 +416,8 @@ add(S3, f"{BIN} . --pack-top-n=3 --top-k=0", "Pack the top-3 ranked symbols' ful
 S4 = "assess quality / structure"
 add(S4, f"{BIN} . --metrics --top-k=10", "Fan-in/out + complexity annotations on the map.")
 add(S4, f"{BIN} . --deps", "File->file dependency graph (god-files, cycles).")
+add(S4, f"{BIN} . --deps --deps-limit=5", "Lossless inner rows: --deps-limit=N raises the per-file <inc> cap past the 40-row display default, so every import is retrievable.")
+add(S4, f"{BIN} . --deps --deps-limit=5 --deps-offset=5", "Page past it: --deps-offset=M skips rows in every file, and a cut <f> carries shown=/capped=/total=/has_more=/next_offset= so the loop terminates.")
 add(S4, f"{BIN} . --hotspots", "Complexity x recent git churn (maintenance pain).")
 add(S4, f"{BIN} . --clones", "Token-normalized duplicate bodies.")
 add(S4, f"{BIN} . --cochange", "Files that change together in git (hidden coupling).")
