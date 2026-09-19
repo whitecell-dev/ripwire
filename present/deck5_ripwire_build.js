@@ -191,7 +191,7 @@ function storyCards(s, { kick, head, stories, footText }){
     ["byte-identical", "two runs, same bytes — a gate on every push, not a tendency; warm equals cold"],
     ["zero runtime deps", "CMake + a C++23 compiler; builds with the network off — vendored everything"],
     ["the languages", "Rust · C++ · ObjC/C++ · C · Metal · CUDA · Python · Go · Swift · TypeScript · JavaScript · Java · Kotlin · Ruby · PHP · Lua · Elixir · Dart · Bash · C# · JSON · TOML · YAML · Markdown — 24 vendored grammars; markdown headings are real symbols"],
-    ["agent-native", "an MCP server and 181 long flags behind one `--help` that is always the authority"],
+    ["agent-native", "an MCP server and 183 long flags behind one `--help` that is always the authority"],
   ];
   // Row height carries the LONGEST body (the language line, which wraps to three at this width),
   // not the shortest — a fixed 0.68 clipped its last line off the bottom of the card.
@@ -226,7 +226,7 @@ function storyCards(s, { kick, head, stories, footText }){
     s.addText(flags, { x: MX+6.3,  y: y+0.04, w: 5.65, h: 0.58, fontFace: MONO, fontSize: 9, color: CYAN, valign: "middle", margin: 0 });
     y += 0.74;
   }
-  foot(s, "--help is generated from the binary's own flag table — 181 long flags; docs/COMMANDS.md carries an entry for every one of them, 162 with a recorded invocation and its output");
+  foot(s, "--help is generated from the binary's own flag table — 183 long flags; docs/COMMANDS.md carries an entry for every one of them, 164 with a recorded invocation and its output");
 }
 
 /* ── S5 · the moments ───────────────────────────────────────────────────── */
@@ -1123,7 +1123,7 @@ function storyCards(s, { kick, head, stories, footText }){
   kicker(s, "// how it stays true", AMBER);
   title(s, "Proven, not promised");
   const cards = [
-    ["639 gate scripts", "the suite runs on every push — plus determinism, cache-transparency and golden contracts; the gate count itself is gated against the runner's own loop"], // gatecount
+    ["640 gate scripts", "the suite runs on every push — plus determinism, cache-transparency and golden contracts; the gate count itself is gated against the runner's own loop"], // gatecount
     ["byte-identical, always", "two runs over the same tree produce the same bytes; warm equals cold. Enforced in CI, twice — Release AND a plain flavour, because NDEBUG once blinded a whole class of checks"],
     ["differential refactoring", "a refactor must prove it changed nothing observable: two binaries, hundreds of argv vectors, stdout + stderr + exit codes byte-identical"],
     ["held-out labels, authored blind", "eval labels were written by reading source before the ranker ever ran on them — so the eval is allowed to say the ranker is wrong. It has."],
@@ -1147,7 +1147,7 @@ function storyCards(s, { kick, head, stories, footText }){
   title(s, "Claims you can trust, because we publish what failed", { size: 32 });
 
   card(s, MX, 1.72, 3.86, 1.72);
-  stat(s, "639", "gate scripts named by test/regression.sh — and the COUNT itself is gated against the runner's own loop, so it cannot go stale quietly", // gatecount
+  stat(s, "640", "gate scripts named by test/regression.sh — and the COUNT itself is gated against the runner's own loop, so it cannot go stale quietly", // gatecount
     MX+0.15, 1.86, 3.56, CYAN, { bsize: 42, bh: 0.66, lsize: 9.5 });
   card(s, 4.68, 1.72, 3.86, 1.72, CARD2);
   stat(s, "8", "registered NEGATIVES — changes built, gated green, measured against a band written before the code, and reverted rather than tuned",
@@ -1273,7 +1273,7 @@ function storyCards(s, { kick, head, stories, footText }){
   s.addText("claude · cursor · codex · windsurf · gemini · aider — or --all to detect every one you have installed",
     { x: 5.2, y: 1.95, w: 7.4, h: 0.55, fontFace: SANS, fontSize: 12, color: MUTED, valign: "middle", margin: 0 });
   const cards = [
-    ["31 MCP verbs", "16 read verbs mirroring the CLI, 12 flagship reflexes (impact, uses, edit_check, from_trace, connect …), 3 span-addressed edit verbs with a safety contract"],
+    ["32 MCP verbs", "17 read verbs mirroring the CLI, 12 flagship reflexes (impact, uses, edit_check, from_trace, connect …), 3 span-addressed edit verbs with a safety contract"],
     ["lazy-body handles", "read verbs return signatures and a stable handle; the agent fetches a body only when it decides it needs one — names by default, bytes on request"],
     ["18 agent skills", "moment-matched workflows (orient, navigate, change-check, quality-bar …) — wrap prints the recipe, skills/install.sh installs them"],
     ["12 orchestrator loops", "copy-paste prompts in prompts/: run the same audit, eval and head-to-head machinery that built this tool, on your own repository"],
@@ -1294,7 +1294,7 @@ function storyCards(s, { kick, head, stories, footText }){
   foot(s, "the MCP server exposes the same deterministic engine — one index, shared with the CLI, staleness-checked");
   notes(s, [
     "SOURCES (agent wiring)",
-    "- “31 MCP verbs … 16 read verbs … 12 flagship reflexes … 3 span-addressed edit verbs” — README.md on main 40a1895b: “One stdio server, 31 verbs — 16 read, 12 flagship-reflex, 3 span-addressed edit”.",
+    "- “32 MCP verbs … 17 read verbs … 12 flagship reflexes … 3 span-addressed edit verbs” — README.md on main 40a1895b: “One stdio server, 32 verbs — 17 read, 12 flagship-reflex, 3 span-addressed edit”.",
     "- “18 agent skills” — README.md: “skills/ ships eighteen task-shaped skills”; skills/ holds 18 directories.",
     "- “12 orchestrator loops” — README.md: “prompts/ holds twelve self-contained orchestrator prompts”, and prompts/ holds 12 .md files besides its own README.md. This card said 11 until 2026-09-11; test/readmedriftcheck.sh arm (I1) gates the README against the directory, and the deck now states the same number.",
   ]);
@@ -1394,10 +1394,10 @@ function storyCards(s, { kick, head, stories, footText }){
   kicker(s, "// do not take any of it on trust", AMBER);
   title(s, "Every claim, and the command that re-derives it");
   const claims = [
-    ["181 long flags · 34 slides",        "bash test/deckclaimcheck.sh"],
+    ["183 long flags · 34 slides",        "bash test/deckclaimcheck.sh"],
     ["every --flag named here exists",    "bash test/deckcheck.sh"],
     ["74.7% fewer element bytes",         "bash test/showcasecapturecheck.sh"],
-    ["639 gate scripts",                  "bash test/manifestcheck.sh"], // gatecount
+    ["640 gate scripts",                  "bash test/manifestcheck.sh"], // gatecount
     ["49 repos · 71 papers · 237 surveyed","bash test/readmedriftcheck.sh"],
     ["the ten moments, any row",          "ripwire . --callers=SYM | wc -c"],
     ["the head-to-head table",            "bench/headtohead/r4-2026-08-06/"],

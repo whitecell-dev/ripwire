@@ -822,9 +822,9 @@ Full retrieval tables — including the MRR figures behind the router numbers ab
 ## What it answers
 
 <details>
-<summary><b>181 long flags</b> across seven families, plus the MCP server — and <code>--help-task</code> names the ONE command a task wants, or abstains honestly when the evidence is too thin</summary>
+<summary><b>183 long flags</b> across seven families, plus the MCP server — and <code>--help-task</code> names the ONE command a task wants, or abstains honestly when the evidence is too thin</summary>
 
-Around the core sit 181 long flags advertised in `--help`, across seven families — plus an MCP
+Around the core sit 183 long flags advertised in `--help`, across seven families — plus an MCP
 server, so a coding agent can call any of them mid-task instead of grepping and reading whole files.
 `--help` prints one line per flag (~4.5K tokens); `--help=--FLAG` prints that flag's full entry with
 every caveat, `--help=SECTION` one family, and `--help=all` the whole catalog.
@@ -1817,9 +1817,9 @@ wrong, and it has. These are the results that say so, all in-tree, all published
 ### In the tests
 
 <details>
-<summary><b>639 gate scripts</b>, five contracts no unit test can hold, and the house rule: write the gate before the code it measures</summary> <!-- gatecount -->
+<summary><b>640 gate scripts</b>, five contracts no unit test can hold, and the house rule: write the gate before the code it measures</summary> <!-- gatecount -->
 
-`test/regression.sh` names **639 gate scripts** and is the authoritative list; <!-- gatecount -->
+`test/regression.sh` names **640 gate scripts** and is the authoritative list; <!-- gatecount -->
 `python3 test/pargates.py . ./build/ripwire -j 6` runs the same set in parallel. On top of them sit the
 contracts that do not fit a unit test: two runs byte-identical, warm output identical to cold, output
 that pipes clean through `xmllint --noout`, a sanitizer build with `-fno-sanitize-recover=all`, and a
@@ -1878,16 +1878,16 @@ ripwire wrap --all       # detect every installed agent and emit each one's conf
 ```
 
 <details>
-<summary><b>One stdio server, 31 verbs</b> — 16 read, 12 flagship-reflex, 3 span-addressed edit</summary>
+<summary><b>One stdio server, 32 verbs</b> — 17 read, 12 flagship-reflex, 3 span-addressed edit</summary>
 
-**One stdio server, 31 verbs** — 16 read, 12 flagship-reflex, 3 span-addressed edit — and a client
+**One stdio server, 32 verbs** — 17 read, 12 flagship-reflex, 3 span-addressed edit — and a client
 that isn't one of the six above can be pointed at the same process by hand.
 </details>
 
 <details>
-<summary>What the 31 verbs are — lazy body handles, the edit verbs' safety contract, the pre-print skill scan, and the hand-written stanza for any other MCP client</summary>
+<summary>What the 32 verbs are — lazy body handles, the edit verbs' safety contract, the pre-print skill scan, and the hand-written stanza for any other MCP client</summary>
 
-That registers one stdio server — `ripwire --mcp` — exposing **31 verbs**: 16 read verbs, 12
+That registers one stdio server — `ripwire --mcp` — exposing **32 verbs**: 17 read verbs, 12
 flagship-reflex verbs, and 3 span-addressed edit verbs. Read verbs mirror the CLI (`analyze`, `for`,
 `grep`, `cochange`, `fetch_body`, `lego`, `mentions`, `owners`, `memory_recall`,
 `situational_awareness`, `batch`, …); `find_symbol` and `find_referencing_symbols` attach a stable
@@ -1922,7 +1922,7 @@ socket instead of stdio, `ripwire --listen=HOST:PORT` serves the same verbs.
 
 `skills/` ships **seventeen task-shaped skills** that tell an agent *which* verb answers the moment it
 is in — orienting cold, tracing a call, sizing a refactor, checking a diff, hunting a bug, writing
-tests, reviewing security. Without them an agent has 31 verbs and no map of when each applies; the skills name the moment
+tests, reviewing security. Without them an agent has 32 verbs and no map of when each applies; the skills name the moment
 each verb is for. Install as symlinks back into this repo, so edits here take effect
 immediately:
 
@@ -2297,7 +2297,7 @@ it finds a CRITICAL, unless you pass `--force`.
 #### 3.4 Register the MCP server (optional)
 
 The command line is the primary interface. The MCP server is the optional second interface. The MCP
-server exposes 31 MCP verbs. The verb schemas reside in the agent context for every session. For
+server exposes 32 MCP verbs. The verb schemas reside in the agent context for every session. For
 this reason, register the MCP server only when you need it.
 
 `ripwire wrap <agent>` prints the recipe for one agent — `claude`, `cursor`, `codex`, `aider` and
@@ -2368,7 +2368,7 @@ identity of the index, and says which one is at fault.
 
 ### 5. Command families
 
-The `--help` output groups 181 long flags advertised in `--help` into seven families. The `--help=`
+The `--help` output groups 183 long flags advertised in `--help` into seven families. The `--help=`
 column below is the argument that prints one family: `ripwire --help=navigate`. `ripwire
 --help=--FLAG` prints one flag's full text — the caveats, the units, what it refuses and why.
 `ripwire --help=all` is the whole catalog, about 46,000 tokens.

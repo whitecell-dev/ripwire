@@ -282,7 +282,7 @@ struct McpValueSpec
 //     findRawValue exists to separate, and `connect symbols:["main"]` got a bespoke fourth-dialect sentence
 //     ("connect needs 2..16 symbols (got 1)") instead of the domain clause and a runnable example.
 // P11 (capture-audit 2026-09-04): `path`, `paths`, `limit` and `offset` are the four fields that repeat
-// across many tools — path/paths on all 31 — so every byte of THEIR sentences is paid 31 times in the
+// across many tools — path/paths on all 32 — so every byte of THEIR sentences is paid 32 times in the
 // per-session manifest. They are spelled at the shortest length that still names the TYPE and the DOMAIN,
 // which is everything a bad-value refusal owes the caller. Every other row here appears once or twice and
 // keeps its full sentence: brevity is charged where the repetition is, not everywhere.
@@ -290,6 +290,10 @@ inline constexpr McpValueSpec kMcpValueFields[] = {
     // ── numeric ──
     { "limit",         "a positive integer (omit for the default window)",                            "limit=40", "integer" },
     { "offset",        "a non-negative integer (omit to start at row 1)",                             "offset=0", "integer" },
+    // F3: the --deps inner-row window (the F1 pair), same domains as limit/offset above — one refusal
+    // wording for one window shape, whether it pages files or the <inc> rows inside them.
+    { "deps_limit",    "a positive integer (omit for the 40-row per-file default)",                   "deps_limit=100", "integer" },
+    { "deps_offset",   "a non-negative integer (omit to start at row 1 of every file)",               "deps_offset=40", "integer" },
     { "radius",        "an integer in 1..12 (omit it for the default 6)",                             "radius=6", "integer" },
     { "partition",     "an integer in 2..16 (omit it for one un-split bundle; 1 IS the un-split one)", "partition=4", "integer" },
     { "top_k",         "an integer in 1..1000 (omit it for the verb's own default)",                  "top_k=4", "integer" },
@@ -1022,6 +1026,10 @@ inline constexpr McpVerbFields kMcpVerbFields[] = {
     // applies compactlegend.h's rewrite; the JSON/text verbs (find_*/grep/cochange/mentions/quality_delta/
     // situational_awareness/memory_recall/fetch_body) do not declare it and refuse it as an unknown field.
     { "slice",                    "path symbol var flow depth legend" },
+    // F3: the CLI --deps twin. limit/offset window the per-file list (the M13 paging rule above);
+    // deps_limit/deps_offset window the <inc> rows inside each file (the F1 pair). No legend: the payload
+    // carries the verb's own comment, and the compactor knows no packDeps dialect (the `for` precedent).
+    { "deps",                     "path paths limit offset deps_limit deps_offset" },
     // ── edit verbs ──
     { "replace_symbol_body",      "path paths symbol file new_body post_check", McpVerbFields::Effect::Destructive },
     { "insert_before_symbol",     "path paths symbol file text post_check", McpVerbFields::Effect::Writes },

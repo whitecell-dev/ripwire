@@ -443,8 +443,43 @@ inline std::string analyzeToString( const std::string& root, int topK, bool stab
                                     // W2-F: the map's convergence disclosure. The CLI map carries pr_iters= and
                                     // this one must too — "the clause landed at 3 of its 5 echo sites" is the
                                     // §B4 family, and mcpclidiffcheck is the gate that keeps the two surfaces one.
-                                    /*ann=*/rw::MapAnnotations{ .prDisclosure = ix.prDisclosure },
-                                    /*statsFirstScreen=*/true, anRootArg, &ix.g.locPinOut, ix.g.externalCalls, &ix.g.declinedOut ); } );
+                                     /*ann=*/rw::MapAnnotations{ .prDisclosure = ix.prDisclosure },
+                                     /*statsFirstScreen=*/true, anRootArg, &ix.g.locPinOut, ix.g.externalCalls, &ix.g.declinedOut ); } );
+}
+
+// `deps` verb: the CLI --deps file-to-file dependency view over the warm index — the SAME computation
+// (resolveStructuralIncludeAdj + sccCycles + dependencyHealth + restrictDependencyHealth + afferent) and
+// the SAME renderer (serialize.h::packDeps) the CLI arm calls (verbs_report.h), captured with captureXml.
+// One XML shape, two surfaces, no forked logic (the whereis/stray_content/flags rule above). F3: no earlier
+// MCP verb answered --deps at all, so the inner <inc> rows (F1) were unreachable from this surface.
+// `page` windows the per-file list; depsLimit/depsOffset window the <inc> rows inside each file (F1).
+// Always answers (no symbol to resolve); "" only when the buffer itself failed, like analyzeToString.
+inline std::string depsText( const std::string& root, McpPageArgs page = {}, int depsLimit = 0, int depsOffset = 0 )
+{
+    const McpIndex&     ix  = getIndex( root );
+    const IngestResult& ing = ix.ing;
+    const StructuralIncludeAdj sa = resolveStructuralIncludeAdj( ing );   // the LOAD-TIME file→file graph (forward = includes)
+    const auto&     adj    = sa.adj;
+    const auto      cycles = sccCycles( adj );                            // Lakos cardinal sin: cyclic physical deps
+    const DepHealth h      = dependencyHealth( adj );                     // per-file transitive cone (unrestricted BFS)
+    const RestrictedDepHealth rh = restrictDependencyHealth( ing, h.transitive );   // the ccd/acd/nccd denominator
+    std::vector<std::uint32_t> afferent( ing.files.size(), 0 );           // Ca: # files that include each file (blast radius)
+    for( const auto& outs : adj )
+    {
+        for( std::uint32_t g : outs )
+        {
+            if( g < afferent.size() )
+            {
+                ++afferent[g];
+            }
+        }
+    }
+    // E3 (analyze's lesson above): the same single-root condition the CLI arm uses, so p= rows read the
+    // same dialect on both surfaces; multi-root answers carry the ing.files spelling, also like the CLI.
+    const std::string_view depsRootArg = ix.ing.realPaths.empty() ? std::string_view( root ) : std::string_view();
+    return captureXml( [ & ]( std::FILE* f )
+                       { packDeps( f, ing, 40, cycles, h.transitive, afferent, adj, rh.ccd, rh.acd, rh.nccd,
+                                   sa.lazyEdgesByFile, sa.lazyEdges, page.limit, page.offset, depsRootArg, depsLimit, depsOffset ); } );
 }
 
 // ─── the cross-branch + dark-content MCP twins (`whereis`, `stray_content`, `flags`) ───

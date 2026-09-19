@@ -270,7 +270,7 @@ print("OK" if code == -32602 else "GOT:" + str(code))
 echo
 echo "=== 6. L4 — explore/pack_task/from_trace/edit_check (B11 verb parity) ==="
 
-# ── tools/list shows 31 verbs, including the L4 three and the field-notes four ───────────────
+# ── tools/list shows 32 verbs, including the L4 three and the field-notes four ───────────────
 LIST_OUT2="$( mcp_call \
     '{"jsonrpc":"2.0","id":1,"method":"initialize"}' \
     '{"jsonrpc":"2.0","id":2,"method":"tools/list"}' | tail -1 )"
@@ -291,7 +291,7 @@ L4_WHEREIS="$( l4_field '"whereis" in names' )"
 L4_STRAY="$(   l4_field '"stray_content" in names' )"
 L4_FLAGS="$(   l4_field '"flags" in names' )"
 L4_DDRIFT="$( l4_field '"doc_drift" in names' )"
-if [ "$L4_COUNT" = "31" ]; then ok "tools/list shows exactly 31 verbs"; else no "tools/list shows $L4_COUNT verbs, expected 31"; fi
+if [ "$L4_COUNT" = "32" ]; then ok "tools/list shows exactly 32 verbs"; else no "tools/list shows $L4_COUNT verbs, expected 32"; fi
 if [ "$L4_DDRIFT" = "True" ]; then ok "tools/list includes 'doc_drift'"; else no "tools/list is missing 'doc_drift'"; fi
 if [ "$L4_WHEREIS" = "True" ]; then ok "tools/list includes 'whereis'"; else no "tools/list is missing 'whereis'"; fi
 if [ "$L4_STRAY" = "True" ]; then ok "tools/list includes 'stray_content'"; else no "tools/list is missing 'stray_content'"; fi

@@ -224,10 +224,12 @@ printf '%s' "$MAP" | grep -qE '<s t="fn" n="amb_caller"[^>]*amb="1"' \
 # canonical multi-match into the split instead of dropping it.
 # C1 (Round C lane B): each arm of the split now carries prov="split", so the row is
 # `<c n="run" prov="split"/>`. Count on the OPEN TAG, then pin the marker separately.
+# F2 (addressable split edges): each split arm additionally names its candidate (to=/p=/l=), so the closed
+# literal no longer matches — the open tag still pins that prov="split" is present on the arm.
 [ "$( printf '%s' "$MAP" | grep -oE '<c n="run"[^>]*/>' | wc -l | tr -d ' ' )" = 4 ] \
     && ok "both ambiguous calls split onto BOTH run defs (4 rows total), never picking one" \
     || no "the ambiguous calls did not split onto both run defs"
-[ "$( printf '%s' "$MAP" | grep -oE '<c n="run" prov="split"/>' | wc -l | tr -d ' ' )" = 4 ] \
+[ "$( printf '%s' "$MAP" | grep -oE '<c n="run" prov="split"' | wc -l | tr -d ' ' )" = 4 ] \
     && ok "all 4 split arms carry prov=\"split\" — the guess names its own edges, not just its symbol" \
     || no "the split arms are not marked prov=\"split\""
 printf '%s' "$MAP" | grep -qE 'files=3 symbols=39 edges=18 shown=39 est_tokens=[0-9]+ ambiguous=2 unresolved=0' \

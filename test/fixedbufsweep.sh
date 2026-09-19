@@ -185,7 +185,7 @@ TABLE = {
     ( "src/serialize.h", "db" ):       ( 1, "safe",       "db[64 + kPageDisclosureCap]: <deps files=...> plus pageDisclosure's own capped buffer, sized against that cap by construction." ),
     ( "src/serialize.h", "hb" ): ( 3, "latent",     "hb[176]: <health .../>; shape= is a fixed vocabulary but acd/nccd are %.1f/%.2f on DOUBLES, formally unbounded. Realistic worst case 66 lit + 60 digits + 24 float + 10 shape = 160 B, ~16 B of margin. Truncation drops the '/>' and orphans the element." ),
     ( "src/serialize.h", "fit" ):      ( 1, "safe",       "fit[160]: the JSON max_tokens/fit_bytes twin; the %s is the literal ',\"over_ceiling\":true'." ),
-    ( "src/serialize.h", "num" ): ( 25, "safe",       "num[64]: ',\"calls_total\":%u,\"calls_capped\":%s,...' — the %s is 'true'/'false'. Worst case 56 B." ),
+    ( "src/serialize.h", "num" ): ( 26, "safe",       "num[64]: ',\"calls_total\":%u,\"calls_capped\":%s,...' — the %s is 'true'/'false'. Worst case 56 B. +1 (F2, addressable split edges): the JSON <c> twin writes ',\"l\":{}' of tgt.line — numeric-only, ~12 B worst case." ),
 }
 
 # -- NUMERIC_ONLY -- the rest of the population, classified BY DERIVATION rather than by hand ------------
@@ -258,12 +258,15 @@ NUMERIC_ONLY = {
     ( "src/serialize.h", "gfb" ): 1,
     ( "src/serialize.h", "inAttr" ): 1,
     ( "src/serialize.h", "kbuf" ): 1,
-    ( "src/serialize.h", "lb" ): 4,   # row 6 (2026-09-12): collectCalleeNameRow's line buffer (the merged <c n= l=> row) joined the two
+    ( "src/serialize.h", "lb" ): 5,   # row 6 (2026-09-12): collectCalleeNameRow's line buffer (the merged <c n= l=> row) joined the two
                                       #   …and a FOURTH (2026-09-13, PR #215 item 8): appendMergedCalleeNameRows joins the row's
                                       #   line numbers itself now, because l= is sorted ASCENDING at append time rather than
                                       #   accumulated as text in walk order. Same shape as the site three lines above it —
                                       #   "{}" of one std::uint32_t, ten digits worst case against 15 usable + NUL, no %s and
                                       #   nothing escaped, so it does not join the string-interpolating population
+                                      #   …and a FIFTH (F2, addressable split edges): the XML <c> split-arm identity writes
+                                      #   the target line into a local `char lb[24]` (`"\" l=\"{}"` of tgt.line — the closing quote rides the shared `"\"/>"` write; ten digits
+                                      #   worst case against 23 usable + NUL, numeric-only, nothing escaped)
     ( "src/serialize.h", "lineAttr" ): 1,
     ( "src/serialize.h", "nb" ): 1,   # row 6 (2026-09-12): appendCalleeNameRow's `"\" l=\"{}\"/>"` buffer went with the merge
     ( "src/serialize.h", "precAttr" ): 1,
@@ -521,7 +524,7 @@ if not bad:
 #            (hdr: 40 B max in 63 usable; buf: 101 B max in 127 usable; both integer-only, no %s, nothing
 #            escaped). Not printf conversions at 4c10be9d — they are new code, rowed for their shape, and
 #            (S1) re-derives the member set from source rather than from this arithmetic.
-EXPECTED = { "mentions": 333, "calls": 225, "sites": 225, "rows": 98, "widthforms": 0 }
+EXPECTED = { "mentions": 335, "calls": 227, "sites": 227, "rows": 98, "widthforms": 0 }
 #            2026-09-04 (capture-audit L6, H9): +1 call/+1 mention, sites/rows UNCHANGED — re-read, not
 #            re-counted. packConnect gained ONE snprintf into a new `char connectCeiling[32]` for the
 #            H9 ` max_tokens="%d"` ceiling disclosure: a single %d of a caller-supplied INTEGER, no %s,
@@ -533,6 +536,7 @@ EXPECTED = { "mentions": 333, "calls": 225, "sites": 225, "rows": 98, "widthform
 #            2026-09-04 (capture-audit L5, H6/F2): +1 call/+1 mention — packLego's iface start-tag snprintf became an if/else PAIR so the TARGETED form can carry defs= (serialize.h ~5460). Re-derived from the diff, not from the delta: one snprintf line became two, both into the SAME `char hdr[64]` (widened from 48 for the extra ` defs="%zu"`), and both interpolate only %zu — no %s, nothing escaped — so neither joins the string-interpolating population and sites/rows are unmoved. (S1)/(S2) stayed green across the change
 #            2026-09-07 (head-to-head vs Graft, F1+F3): +4 calls/+4 mentions, sites/rows/widthforms unmoved — re-derived from `git diff 5726d4d9 -- src/`, not from the delta: (a) testmap.h testRowEvidence: TWO snprintf into a local `char buf[48]`, formats from a per-dialect TABLE (one %s of a constant attribute NAME — never user text, nothing escaped — and one %u), so neither joins the string-interpolating population; (b) serialize.h writeRecentRows: TWO snprintf into `char rc[64]` — the <recent n=%zu of=%zu> open tag and the age_d=%u w=%.3g row tail — no %s. The path itself is written through XmlWriter after escapeXml, outside the buffer.
 #            2026-09-08 (Ruby constant receivers, parser version 83 — structure vs use): +2 calls/+2 mentions, sites/rows/widthforms unmoved — re-derived from `git diff c771066e -- src/`, not from the delta: both in serialize.h packDeps: (a) the <health> line gains ` lazy_edges=%llu` written into a new local `char lb[40]` (one %llu, no %s); (b) the per-file row header `hdr` (now 144 B) is written by one of TWO snprintf branches — with `lazy_edges=%u` or without — %zu/%u/%.2f only, no %s; the path is still written through XmlWriter after escapeXml, outside the buffer. Neither joins the string-interpolating population.
+#            2026-09-18 (F2, addressable split edges): +2 calls/+2 mentions, sites/rows/widthforms unmoved — re-derived from the diff, not from the delta: (a) the XML <c> split arm writes the target line into a new local `char lb[24]` (`"\" l=\"{}\"` of tgt.line — the closing quote rides the shared `"\"/>"` write; numeric-only); (b) the JSON <c> twin writes `,\"l\":{}` of tgt.line into the existing `num[64]` (numeric-only, ~12 B worst case). The canon id and path ride through escapeXml/writeJsonStr beside the buffer, never in it. Neither joins the string-interpolating population.
 #            2026-09-03 (Phase 5 external= round): +1 call/+1 mention — the JSON header's `"external":%zu,` snprintf into the existing hdr[256] (one %zu, ≤ 32 B, the `"locality_pinned":%zu,` twin beside it); no %s, nothing escaped — re-read and sized before this pin
 #            2026-09-03 (round 5 merge): mentions 213 -> 216 with calls/sites/rows UNCHANGED. Re-read, not re-counted:
 #            all three new mentions are DATA, not buffers -- src/externalnames.h lists "snprintf"/"vsnprintf" as C stdlib

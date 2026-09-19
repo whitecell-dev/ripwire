@@ -45,8 +45,12 @@ bytes(){ wc -c <"$1" | tr -d ' '; }
 
 echo "=== (1) --around: default depth 1, disclosed, a subset of depth 2 ==="
 run --around=rankGraphTeleport >"$TMP/ar1"; run --around=rankGraphTeleport --around-depth=2 >"$TMP/ar2"
-[ "$( bytes "$TMP/ar1" )" -le 12000 ] && ok "(1) --around at defaults is $( bytes "$TMP/ar1" ) B (<= 12,000; depth 2 is $( bytes "$TMP/ar2" ) B)" \
-                                        || no "(1) --around at defaults is $( bytes "$TMP/ar1" ) B (> 12,000)"
+# F2 recalibration: split edges now carry their candidate's identity (to=/p=/l=, ~71 B per arm) — this
+# repo's --around neighbourhood holds 71 of them, so the default screen is 15,145 B against the 12,000 B
+# the other four verbs still meet (their rows carry no call edges). Same rows, same disclosure, wider
+# edges: the subset arms below are the real contract, this ceiling is the display-size calibration.
+[ "$( bytes "$TMP/ar1" )" -le 16000 ] && ok "(1) --around at defaults is $( bytes "$TMP/ar1" ) B (<= 16,000; depth 2 is $( bytes "$TMP/ar2" ) B)" \
+                                        || no "(1) --around at defaults is $( bytes "$TMP/ar1" ) B (> 16,000)"
 if [ "$( rootattr "$TMP/ar1" r depth )" = 1 ]; then ok "(1) root discloses depth=\"1\""; else no "(1) root depth= is '$( rootattr "$TMP/ar1" r depth )' (want 1)"; fi
 if [ "$( rootattr "$TMP/ar2" r depth )" = 2 ]; then ok "(1) --around-depth=2 restores depth=\"2\""; else no "(1) --around-depth=2 did not restore depth 2"; fi
 grep -o '<s [^>]*n="[^"]*"' "$TMP/ar1" | grep -o 'n="[^"]*"' | sort -u >"$TMP/ar1.n"

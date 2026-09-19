@@ -95,6 +95,9 @@ inline constexpr McpVerbInfo kMcpVerbTable[] = {
     // lane/tc-sliceat: the ARISE def-use slice (arXiv:2605.03117) as an MCP read — the CLI --slice
     // contract verb-for-verb (inventory / VAR rows / flow / the @FILE:LINE seed), one emitter, two surfaces.
     { "slice",                   "per-line def-use rows of one variable inside one definition (+ transitive flow)", McpVerbGroup::Read },
+    // F3: the CLI --deps twin — the file-to-file dependency graph no earlier MCP verb answered, so the
+    // inner <inc> rows were unreachable from this surface. Same computation + same renderer as the CLI.
+    { "deps",                    "file-to-file dependency graph: every file's imports, god-files, cycles", McpVerbGroup::Read },
     // ── edit verbs (side-effecting; safety contract = refusal leaves the file byte-identical) ──
     { "replace_symbol_body",     "replace a symbol's entire definition with new_body",                     McpVerbGroup::Edit },
     { "insert_before_symbol",    "insert text immediately before a symbol's definition",                   McpVerbGroup::Edit },
@@ -105,7 +108,7 @@ inline constexpr McpVerbInfo kMcpVerbTable[] = {
 // (`ctx`, `r`). M1 moved it DOWN into mcpverbs.h (unchanged, same signature): applyCompactToBatchSubs
 // needs it there, and mcpverbs.h is included BY this file, so the mapping has to live on the lower side.
 
-inline constexpr std::size_t kMcpVerbCount = 31;   // +1 lane/tc-sliceat: the `slice` read verb
+inline constexpr std::size_t kMcpVerbCount = 32;   // +1 F3 (lossless --deps inner rows): the `deps` read verb
 static_assert( sizeof( kMcpVerbTable ) / sizeof( kMcpVerbTable[0] ) == kMcpVerbCount,
                "kMcpVerbTable size drifted from kMcpVerbCount — update both together (A4-S2)" );
 
@@ -174,9 +177,9 @@ inline constexpr std::string_view kAtSeedRebindClause =
 // it derives its expectation by ENUMERATION (it asks the live batch arm which verbs refuse and counts them)
 // rather than by re-running this formula — a gate that restates the formula cannot catch the formula.
 inline constexpr std::size_t kBatchExcludedCount = kMcpVerbCount - kBatchServedCount;
-static_assert( kBatchExcludedCount == 15,
+static_assert( kBatchExcludedCount == 16,
                "the batch tools/list stanza spells kBatchExcludedCount in prose — a verb joined or left "
-               "kMcpVerbTable / kBatchServedVerbs; update the stanza's number and this assert together" );
+               "kMcpVerbTable / kBatchServedVerbs; update the stanza's number and this assert together");
 
 // V3/F4: how far kBatchExcludedCount moves when the git-backed verbs are omitted from tools/list. The
 // subtraction is over the git-only verbs batch does NOT serve, because those are the ones sitting in the
@@ -265,7 +268,7 @@ inline constexpr std::string_view kMcpServerInstructions =
     // H2H-Graft (2026-09-07, taken from Graft's src/mcp/instructions.ts): a host that DEFERS tool schemas
     // hands the agent bare names and withholds descriptions, but this `instructions` string survives on its
     // own track — so it is the one channel that can tell the agent to load the verbs in ONE lookup instead of
-    // paying a round trip per verb (31 verbs here; the deferral tax is the larger cost).
+    // paying a round trip per verb (32 verbs here; the deferral tax is the larger cost).
     "If these tools arrive deferred (names shown, schemas withheld), load them all in ONE lookup rather than "
     "one at a time.";
 inline constexpr std::string_view kMcpProtocolVersions[] =
@@ -803,8 +806,13 @@ inline McpDispatchResult dispatchMcpLine( const std::string& line, int topK, boo
                    // lane/tc-sliceat — the ARISE def-use slice (the CLI --slice contract verb-for-verb; sliceBundleText is the ONE emitter both surfaces call).
                    "{\"name\":\"slice\",\"description\":\"WHERE IS THIS VARIABLE DEFINED AND USED inside one function — NAME-BASED intra-procedural def-use rows of one variable inside ONE uniquely-resolved definition (the ARISE slicer, arXiv:2605.03117). symbol alone lists the sliceable locals to pick from; add var (or spell symbol as SYM:VAR / file:name:VAR) for the per-line rows. flow=back|fwd|both adds the TRANSITIVE data-flow slice over reaching-definition edges, bounded by depth (1..32, default 8; a cutting bound emits flow_truncated). @FILE:LINE seeds resolve here and complete the paper's (file, line[, variable]) seed. Reaching definitions are flow-sensitive for C-family and Python (reach=cfg), source-order elsewhere (reach=linear). Its LIMITS — name-based, intra-procedural, line-granular, DATA dependence only — are stated clause by clause in the answer's own legend. Served: C/C++/ObjC (+CUDA/Metal), Python, JS/TS, Go, Java, Rust; every other language refuses loudly. Single-root; read-only.\","
                    + mcprefuse::toolMetadataFor( "slice", pathIsRequired ) + "},"
+                   // F3 — the CLI --deps twin (same computation, same packDeps renderer as the CLI arm).
+                   // First sentence is the ROUTING sentence mcpmanifestcheck pins: what it answers, and the
+                   // one non-obvious caveat (the per-file row cap and its hatch).
+                   "{\"name\":\"deps\",\"description\":\"File-to-file dependency graph: every file's #include/import targets with god-files, cycles and Lakos health. Use to find what a file pulls in or which files depend on it most; for a symbol's blast radius use 'impact'. The per-file rows show the first 40 targets unless you raise the cap with deps_limit=N (deps_offset=M pages inside a file); limit/offset page the files. A cut file carries shown=/has_more=/next_offset= so the loop terminates.\","
+                   + mcprefuse::toolMetadataFor( "deps", pathIsRequired ) + "},"
                    // A4-R3 batch — one-turn context sweep: N read sub-queries in ONE round-trip, merged + deduped.
-                   "{\"name\":\"batch\",\"description\":\"ONE-TURN CONTEXT SWEEP: answer up to 16 heterogeneous READ sub-queries in a single call (the deterministic $0 counterpart of a parallel-search agent). queries = array over the SAME path, in EITHER grammar: {verb, ...args} objects, or the CLI --batch file's own \\\"verb:arg\\\" strings (queries=[\\\"for:parse the config\\\",\\\"callers:escapeXml\\\"]) - one grammar, both front doors; each verb is one of " + mcpBatchServedVerbsList( omitGitVerbs ) + " (plus the ALIASES callers=find_referencing_symbols and callees=find_symbol) with that verb's own args. The other " + std::to_string( batchExcluded ) + " advertised verbs are NOT batchable: side effects (the 3 edit verbs, quality_baseline), a heavy both-trees pass (quality_delta), no nesting (batch), and whole-repo / cross-branch scope (situational_awareness, memory_recall, connect, explore — and its alias pack_task — from_trace, " + mcprefuse::batchGitOnlyExcludedNames( omitGitVerbs ) + "flags, doc_drift). Result is one <batch> of <q i verb ok> elements IN ORDER, each sub-answer verbatim in CDATA; a failing sub-query is an inline ok=0 err= entry and never fails the batch; identical payloads dedup; over 16 caps honestly.\","
+                   "{\"name\":\"batch\",\"description\":\"ONE-TURN CONTEXT SWEEP: answer up to 16 heterogeneous READ sub-queries in a single call (the deterministic $0 counterpart of a parallel-search agent). queries = array over the SAME path, in EITHER grammar: {verb, ...args} objects, or the CLI --batch file's own \\\"verb:arg\\\" strings (queries=[\\\"for:parse the config\\\",\\\"callers:escapeXml\\\"]) - one grammar, both front doors; each verb is one of " + mcpBatchServedVerbsList( omitGitVerbs ) + " (plus the ALIASES callers=find_referencing_symbols and callees=find_symbol) with that verb's own args. The other " + std::to_string( batchExcluded ) +                    " advertised verbs are NOT batchable: side effects (the 3 edit verbs, quality_baseline), a heavy both-trees pass (quality_delta), no nesting (batch), and whole-repo / cross-branch scope (situational_awareness, memory_recall, connect, explore — and its alias pack_task — from_trace, deps, " + mcprefuse::batchGitOnlyExcludedNames( omitGitVerbs ) + "flags, doc_drift). Result is one <batch> of <q i verb ok> elements IN ORDER, each sub-answer verbatim in CDATA; a failing sub-query is an inline ok=0 err= entry and never fails the batch; identical payloads dedup; over 16 caps honestly.\","
                    + mcprefuse::toolMetadataFor( "batch", pathIsRequired ) + "}"
                    "]}}";
             }
@@ -1787,6 +1795,28 @@ inline McpDispatchResult dispatchMcpLine( const std::string& line, int topK, boo
                                                     sliceDepthArg.isPresent ? int( sliceDepthArg.value ) : 0, redactPtr,
                                                     legendCompactPosture );
                     resp = r.payload.empty() ? errResultMsg( -32602, r.refusal ) : textResult( r.payload );
+                }
+                // F3 — the CLI --deps twin. limit/offset window the per-file list (the shared pagedResult
+                // envelope every paged verb uses); deps_limit/deps_offset window the <inc> rows inside each
+                // file (the F1 pair), read through the same guarded mcpIntArg reader so a present-but-bad
+                // value refuses loudly instead of reading as the default.
+                else if( name == "deps" && !path.empty() )
+                {
+                    resp = pagedResult( [ & ]( McpPageArgs pg )
+                    {
+                        const McpIntArg depLim = mcpIntArg( args, "deps_limit", 1, kMcpPageValueMax );
+                        if( !depLim.refusal.empty() )
+                        {
+                            return errResultMsg( -32602, depLim.refusal );
+                        }
+                        const McpIntArg depOff = mcpIntArg( args, "deps_offset", 0, kMcpPageValueMax );
+                        if( !depOff.refusal.empty() )
+                        {
+                            return errResultMsg( -32602, depOff.refusal );
+                        }
+                        const std::string t = depsText( path, pg, int( depLim.value ), int( depOff.value ) );
+                        return t.empty() ? errResult( -32603, "internal error" ) : textResult( t );
+                    } );
                 }
                 // EDIT verbs — `file` (optional) is the disambiguating file-path substring for a same-named
                 // symbol; the PAYLOAD is non-empty by the §H2 write-verb gate above (see isMcpEditVerb).

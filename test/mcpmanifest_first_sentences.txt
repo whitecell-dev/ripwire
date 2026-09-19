@@ -6,6 +6,7 @@ analyze	Architecture map for a directory: signatures and the call graph for the 
 batch	ONE-TURN CONTEXT SWEEP: answer up to 16 heterogeneous READ sub-queries in a single call (the deterministic $0 counterpart of a parallel-search agent).
 cochange	Files that historically change together with this file — the co-edit partners.
 connect	When a task touches 2..16 named symbols, returns the minimal subgraph RELATING them - terminals, the fewest joining intermediaries (with signatures), and call edges in true direction - finding the shared-caller joins a directed path_between cannot; unrelated symbols are reported honestly in <unconnected>.
+deps	File-to-file dependency graph: every file's #include/import targets with god-files, cycles and Lakos health.
 doc_drift	WHICH OF THIS REPO'S DOC CLAIMS ARE NOW FALSE.
 edit_check	Just edited a symbol? Did its CONTRACT (param count + publicness) change vs git HEAD, and which 1-hop callers are NOW INCOMPATIBLE with the new arity by fixed-arity evidence (not a guess — every folded definition disagrees)? This is call sites worth OPENING, not a proof: call edges are matched by NAME, so a same-named callee this tool does not index can flag a caller that never touches the edited symbol at all, and a clean tree can carry a nonzero incompatible= with nothing edited.
 exemplar	BEFORE writing a function / method / class / struct / interface / variable, get the repo's single best-in-class instance of that kind to imitate — signature AND full body.

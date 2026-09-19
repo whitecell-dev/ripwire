@@ -248,7 +248,15 @@ tools = json.loads( line )[ "result" ][ "tools" ]
 # owner authorized on 2026-09-13 with the measured number; #214's names the response shape for two answers
 # that carry no legend at all), and the merge only makes them visible together. Headroom after this line:
 # 68 B, again less than one declared argument, which is rule 5 above working.
-CEILING = 43500
+# RE-ANCHORED 2026-09-18 (F3: the `deps` read verb — the CLI --deps twin, so the inner <inc> rows
+# are reachable from MCP): 43,432 -> 44,605 = +1,173, measured on this tree against the F2 build:
+#   deps description +443 B (the routing sentence, the per-file cap hatch, the file-paging clause)
+#   deps schema +594 B (path/paths/limit/offset/deps_limit/deps_offset properties with the descriptions
+#     the contract obliges each to carry; deps_limit/deps_offset are new kMcpValueFields rows)
+#   batch stanza +6 B ("deps, " in the whole-repo exclusion list — deps answers whole-repo scope like
+#     connect/explore, so it stays out of batch) + ~130 B stanza envelope (name, braces, required).
+# Headroom after this line: 95 B, less than one declared argument, which is rule 5 above working.
+CEILING = 44700
 manifest = len( json.dumps( { "tools": tools }, separators = ( ",", ":" ) ) )
 descBytes   = sum( len( t[ "description" ] ) for t in tools )
 schemaBytes = sum( len( json.dumps( t[ "inputSchema" ], separators = ( ",", ":" ) ) ) for t in tools )

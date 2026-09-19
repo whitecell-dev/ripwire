@@ -121,12 +121,21 @@ else
 fi
 
 # ── (F) refusals ──────────────────────────────────────────────────────────────────────────────────
-"$BIN" "$TMP/c66" --deps-limit=5 --no-cache >/dev/null 2>&1
-[ $? -ne 0 ] && ok "--deps-limit without --deps refuses" || no "--deps-limit without --deps exited 0"
-"$BIN" "$TMP/c66" --deps-offset=5 --no-cache >/dev/null 2>&1
-[ $? -ne 0 ] && ok "--deps-offset without --deps refuses" || no "--deps-offset without --deps exited 0"
-"$BIN" "$TMP/c66" --deps --deps-limit=0 --no-cache >/dev/null 2>&1
-[ $? -ne 0 ] && ok "--deps-limit=0 refuses" || no "--deps-limit=0 exited 0"
+if "$BIN" "$TMP/c66" --deps-limit=5 --no-cache >/dev/null 2>&1; then
+    no "--deps-limit without --deps exited 0"
+else
+    ok "--deps-limit without --deps refuses"
+fi
+if "$BIN" "$TMP/c66" --deps-offset=5 --no-cache >/dev/null 2>&1; then
+    no "--deps-offset without --deps exited 0"
+else
+    ok "--deps-offset without --deps refuses"
+fi
+if "$BIN" "$TMP/c66" --deps --deps-limit=0 --no-cache >/dev/null 2>&1; then
+    no "--deps-limit=0 exited 0"
+else
+    ok "--deps-limit=0 refuses"
+fi
 
 # ── (G) determinism ───────────────────────────────────────────────────────────────────────────────
 "$BIN" "$TMP/c66" --deps --deps-limit=25 --deps-offset=17 --no-cache 2>/dev/null >"$TMP/g1"

@@ -740,7 +740,11 @@ def rows( path ):
 bareEst, bare = rows( sys.argv[ 1 ] )
 budEst,  bud  = rows( sys.argv[ 2 ] )
 problems = []
-if len( bud ) < 20:             problems.append( f"budgeted map has only {len(bud)} rows (presence guard)" )
+# F2 recalibration: split edges now carry their candidate's identity (to=/p=/l=), which widened map
+# rows on trees with ambiguous calls — this repo's bare map grew ~10 KB across its ~140 prov edges,
+# so the same 3000-token budget keeps 13 head rows instead of 26. The floor stays a presence guard
+# (comfortably non-empty), not a row-count contract: subset + est ceiling below are the real properties.
+if len( bud ) < 10:             problems.append( f"budgeted map has only {len(bud)} rows (presence guard)" )
 if not bud <= bare:             problems.append( f"{len(bud - bare)} budgeted row(s) absent from the bare map — not a head, a different ranking" )
 if not 0 < budEst <= 4500:      problems.append( f"budgeted est_tokens={budEst}, ceiling 4500" )
 if not bareEst > 4500:          problems.append( f"bare est_tokens={bareEst} is already under the 4500 ceiling — the recommendation saves nothing" )

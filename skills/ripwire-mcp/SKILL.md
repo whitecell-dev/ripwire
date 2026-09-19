@@ -14,7 +14,7 @@ allowed-tools: Bash, Read
 Trigger: "wire ripwire into my agent", "set up the ripwire MCP server", or "which ripwire MCP verb
 answers this?".
 
-**The 31 verbs, at a glance**: 16 read verbs (`analyze`, `for`, `find_symbol`,
+**The 32 verbs, at a glance**: 17 read verbs (`analyze`, `for`, `find_symbol`,
 `find_referencing_symbols`, `grep`, `cochange`, `memory_recall`, `situational_awareness`, `mentions`,
 `owners`, `lego`, `batch` — N read sub-queries in ONE call — `fetch_body`, and `flags` — what is BUILT but
 DARK here: every compile / CMake `option()` / `getenv` gate with its default and the size of the code it
@@ -22,7 +22,8 @@ guards, the answer to "why don't I see feature X?", and `doc_drift` — which of
 are now FALSE: dead `file:line` anchors, deleted symbols, `= N` constants and `[N]` extents the code has
 since changed; call it before trusting a design doc or audit you did not just write, and `slice` — per-line
 def-use rows of ONE variable inside ONE definition, `flow=back|fwd|both` for the transitive data-flow
-slice, `@FILE:LINE` seeds by location and pre-picks the variable the seed line names) + 12 flagship-reflex verbs
+slice, `@FILE:LINE` seeds by location and pre-picks the variable the seed line names, and `deps` —
+the file-to-file dependency graph: every file's imports, god-files, cycles) + 12 flagship-reflex verbs
 (`exemplar`, `quality_delta`, `quality_baseline`, `impact`, `uses`, `path_between`, `connect` — the
 minimal joining subgraph over N task symbols — the L4 one-call/B11-parity trio `explore`, `from_trace`,
 `edit_check` — so an MCP-only agent gets the same write & done reflexes as the CLI — and the CROSS-BRANCH
@@ -35,7 +36,7 @@ edit verbs (`replace_symbol_body`, `insert_before_symbol`, `insert_after_symbol`
 via `fetch_body`); the edit verbs enforce a safety contract (staleness refusal, ambiguity refusal, atomic
 writes) detailed below and in full in [`mcp-reference.md`](mcp-reference.md).
 
-The server exposes **31 MCP verbs**: 16 read verbs (incl. `fetch_body`/`flags`/`slice`), 12 flagship-reflex
+The server exposes **32 MCP verbs**: 17 read verbs (incl. `fetch_body`/`flags`/`slice`/`deps`), 12 flagship-reflex
 verbs (`connect`/`explore`/`from_trace`/`edit_check` and the cross-branch pair `whereis`/`stray_content`) and
 3 edit verbs — `ripwire wrap codex --force` prints the live count.
 

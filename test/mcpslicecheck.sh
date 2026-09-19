@@ -103,9 +103,9 @@ for probe, tag in [("NAME-BASED","namebased"),("intra-procedural","intraproc"),(
     print("%s:%d" % (tag, probe in d))
 ' > "$TMP/list.probe"
 if grep -q '^HAS:1' "$TMP/list.probe"; then ok "(1) tools/list advertises 'slice'"; else no "(1) 'slice' missing from tools/list"; fi
-[ "$( grep '^COUNT:' "$TMP/list.probe" | cut -d: -f2 )" = "31" ] \
-    && ok "(1) the catalog advertises 31 tools" \
-    || no "(1) expected 31 advertised tools, got $( grep '^COUNT:' "$TMP/list.probe" | cut -d: -f2 )"
+[ "$( grep '^COUNT:' "$TMP/list.probe" | cut -d: -f2 )" = "32" ] \
+    && ok "(1) the catalog advertises 32 tools" \
+    || no "(1) expected 32 advertised tools, got $( grep '^COUNT:' "$TMP/list.probe" | cut -d: -f2 )"
 for t in namebased intraproc langs atseed flowdoc; do
     grep -q "^$t:1" "$TMP/list.probe" && ok "(1) description carries the '$t' honesty clause" \
                                       || no "(1) description misses the '$t' clause"
